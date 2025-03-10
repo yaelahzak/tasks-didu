@@ -1,0 +1,74 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex">
+    <main class="flex-1 p-6">
+        <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-lg mx-auto">
+            <h2 class="text-xl font-bold mb-4">Add a Task</h2>
+            <input id="titleInput" type="text" class="border p-2 w-full mb-2" placeholder="Title...">
+            <input id="taskInput" type="text" class="border p-2 w-full mb-2" placeholder="Task name...">
+            <input id="dueDateInput" type="date" class="border p-2 w-full mb-2">
+            <button onclick="addTask()" class="bg-blue-500 text-white px-4 py-2 w-full">Add Task</button>
+        </div>
+        <ul id="taskList" class="mt-6 bg-white p-6 rounded-lg shadow-md w-full max-w-lg mx-auto"></ul>
+    </main>
+
+    <script>
+        async function fetchTasks() {
+            const response = await fetch('index.php');
+            const tasks = await response.json();
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+            tasks.forEach(task => {
+                taskList.innerHTML += `<li class="p-2 flex justify-between border-b">
+                    <span class="${task.status === 'completed' ? 'line-through text-gray-500' : ''}"><strong>${task.title}</strong> - ${task.task} (${task.category}) - ${task.due_date || 'No Date'}</span>
+                    <div>
+                        <button onclick="toggleTask(${task.id}, '${task.status}')" class="text-green-500 mr-2">✔</button>
+                        <button onclick="deleteTask(${task.id})" class="text-red-500">🗑</button>
+                    </div>
+                </li>`;
+            });
+        }
+
+        async function addTask() {
+            const titleInput = document.getElementById('titleInput');
+            const taskInput = document.getElementById('taskInput');
+            const dueDateInput = document.getElementById('dueDateInput');
+            await fetch('add.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ title: titleInput.value, task: taskInput.value, due_date: dueDateInput.value })
+            });
+            titleInput.value = '';
+            taskInput.value = '';
+            dueDateInput.value = '';
+            fetchTasks();
+        }
+
+        async function deleteTask(id) {
+            await fetch('delete.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ id })
+            });
+            fetchTasks();
+        }
+
+        async function toggleTask(id, currentStatus) {
+            const newStatus = currentStatus === 'pending' ? 'completed' : 'pending';
+            await fetch('update.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ id, status: newStatus })
+            });
+            fetchTasks();
+        }
+
+        fetchTasks();
+    </script>
+</body>
+</html>
